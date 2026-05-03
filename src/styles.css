@@ -355,6 +355,43 @@ audio {
   overflow-wrap: anywhere;
 }
 
+.json-tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: -6px;
+}
+
+.json-status {
+  color: #697672;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.json-status.valid {
+  color: #286855;
+}
+
+.json-status.invalid {
+  color: #b33d2d;
+}
+
+.text-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #d5ddd8;
+  border-radius: 8px;
+  color: #286855;
+  background: #fff;
+  font-weight: 800;
+}
+
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 label span {
   display: block;
   margin-bottom: 8px;
@@ -555,6 +592,11 @@ textarea:focus {
 
   .document-row {
     grid-template-columns: 1fr;
+  }
+
+  .json-tools {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   h1 {

@@ -61,8 +61,27 @@ const activeVoice = computed(() => {
   return null;
 });
 
+const parsedKnowledgeJson = computed(() => parseJsonSafely(knowledgeBase.value));
+const parsedDocumentJson = computed(() => parseJsonSafely(documentText.value));
+
+const knowledgeBaseForSearch = computed(() => {
+  if (parsedKnowledgeJson.value.valid) {
+    return flattenJson(parsedKnowledgeJson.value.data).join('\n');
+  }
+
+  return knowledgeBase.value;
+});
+
+const documentTextForSearch = computed(() => {
+  if (parsedDocumentJson.value.valid) {
+    return flattenJson(parsedDocumentJson.value.data).join('\n');
+  }
+
+  return documentText.value;
+});
+
 const combinedKnowledge = computed(() =>
-  [knowledgeBase.value, documentText.value]
+  [knowledgeBaseForSearch.value, documentTextForSearch.value]
     .map((item) => item.trim())
     .filter(Boolean)
     .join('\n\n')
@@ -92,6 +111,34 @@ function clearObjectUrl(urlRef) {
   }
 }
 
+function parseJsonSafely(value) {
+  const trimmed = value.trim();
+  if (!trimmed || !['{', '['].includes(trimmed[0])) {
+    return { valid: false, data: null, error: '' };
+  }
+
+  try {
+    return { valid: true, data: JSON.parse(trimmed), error: '' };
+  } catch (error) {
+    return { valid: false, data: null, error: error.message };
+  }
+}
+
+function flattenJson(value, path = '') {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => flattenJson(item, `${path}[${index}]`));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([key, item]) =>
+      flattenJson(item, path ? `${path}.${key}` : key)
+    );
+  }
+
+  const label = path.replace(/[\W_]+/g, ' ').trim();
+  return [`${label}: ${String(value ?? '')}`.trim()];
+}
+
 function onFileChange(event) {
   const [file] = event.target.files;
   if (!file) return;
@@ -117,8 +164,12 @@ function onDocumentChange(event) {
   if (file.type.startsWith('text/') || textTypes.includes(extension)) {
     const reader = new FileReader();
     reader.onload = () => {
-      documentText.value = String(reader.result || '');
-      documentStatus.value = `${file.name} added to receptionist knowledge.`;
+      const content = String(reader.result || '');
+      documentText.value = content;
+      const parsed = parseJsonSafely(content);
+      documentStatus.value = parsed.valid
+        ? `${file.name} JSON added to receptionist knowledge.`
+        : `${file.name} added to receptionist knowledge.`;
     };
     reader.onerror = () => {
       documentText.value = '';
@@ -130,6 +181,12 @@ function onDocumentChange(event) {
 
   documentText.value = `Document uploaded: ${file.name}. Connect a backend document parser to extract the full contents of this ${extension?.toUpperCase() || 'file'} document.`;
   documentStatus.value = `${file.name} attached. Text extraction for PDF/DOCX needs a backend parser.`;
+}
+
+function formatKnowledgeJson() {
+  const parsed = parseJsonSafely(knowledgeBase.value);
+  if (!parsed.valid) return;
+  knowledgeBase.value = JSON.stringify(parsed.data, null, 2);
 }
 
 function removeDocument() {
@@ -424,9 +481,31 @@ onBeforeUnmount(() => {
             <textarea
               v-model="knowledgeBase"
               rows="7"
-              placeholder="Paste services, hours, appointment rules, FAQs, escalation steps, pricing, or location details."
+              placeholder='Paste plain text or JSON, for example: {"services":["appointments","billing"],"hours":"9 AM to 6 PM"}'
             ></textarea>
           </label>
+          <div class="json-tools">
+            <span
+              class="json-status"
+              :class="{ valid: parsedKnowledgeJson.valid, invalid: parsedKnowledgeJson.error }"
+            >
+              {{
+                parsedKnowledgeJson.valid
+                  ? 'Valid JSON knowledge detected'
+                  : parsedKnowledgeJson.error
+                    ? 'JSON needs fixing before it can be parsed'
+                    : 'Plain text knowledge'
+              }}
+            </span>
+            <button
+              class="text-button"
+              type="button"
+              :disabled="!parsedKnowledgeJson.valid"
+              @click="formatKnowledgeJson"
+            >
+              Format JSON
+            </button>
+          </div>
 
           <label class="question-field">
             <span>Visitor question or command</span>
