@@ -38,6 +38,8 @@ export class VoiceSampleService implements OnDestroy {
     return null;
   });
   readonly hasVoice = computed(() => Boolean(this.activeVoice()));
+  readonly trainingSample = computed<File | Blob | null>(() => this.recordedBlob() || this.voiceFile());
+  readonly trainingSampleName = computed(() => this.activeVoice()?.name || 'voice sample');
 
   useUploadedFile(file: File): void {
     this.clearObjectUrl('uploadedUrl');

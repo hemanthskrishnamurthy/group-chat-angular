@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { BrowserVoiceService } from '../services/browser-voice.service';
+import { Component, inject } from '@angular/core';
+import { VoiceTrainingService } from '../services/voice-training.service';
 import { VoiceSampleService } from '../services/voice-sample.service';
 import { formatBytes } from '../utils/file-format';
 
 @Component({
   selector: 'app-voice-sample-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   template: `
     <section class="panel voice-panel" aria-labelledby="voice-title">
       <div class="panel-heading">
@@ -21,7 +20,7 @@ import { formatBytes } from '../utils/file-format';
           class="icon-button"
           type="button"
           title="Remove voice"
-          (click)="voice.removeVoice()"
+          (click)="removeVoice()"
         >
           x
         </button>
@@ -44,7 +43,7 @@ import { formatBytes } from '../utils/file-format';
             *ngIf="!voice.isRecording(); else stopRecordingTemplate"
             class="primary-button"
             type="button"
-            (click)="voice.startRecording()"
+            (click)="startRecording()"
           >
             Record
           </button>
@@ -59,43 +58,55 @@ import { formatBytes } from '../utils/file-format';
         <div>
           <strong>{{ sample.name }}</strong>
           <span>{{ sample.type }} - {{ formatBytes(sample.size) }}</span>
+          <small>Training sample selected</small>
         </div>
         <audio [src]="sample.url" controls></audio>
       </div>
 
-      <div class="browser-voice-card">
-        <label>
-          <span>Playback preview voice</span>
-          <select
-            [ngModel]="browserVoice.selectedVoiceURI()"
-            (ngModelChange)="browserVoice.setSelectedVoice($event)"
-          >
-            <option value="">Browser default voice</option>
-            <option *ngFor="let option of browserVoice.voices()" [value]="option.voiceURI">
-              {{ option.name }} ({{ option.lang }})
-            </option>
-          </select>
-        </label>
+      <div class="voice-training-card" [class.ready]="training.isReady()" [class.error]="training.trainingError()">
+        <div>
+          <strong>{{ training.statusLabel() }}</strong>
+          <small *ngIf="!training.trainingError()">
+            Train the receptionist with the uploaded or recorded sample before generating cloned audio.
+          </small>
+          <small *ngIf="training.trainingError()" class="training-error">{{ training.trainingError() }}</small>
+        </div>
+        <button
+          class="secondary-button"
+          type="button"
+          [disabled]="!voice.hasVoice() || training.trainingState() === 'training'"
+          (click)="training.trainVoice()"
+        >
+          {{ training.trainingState() === 'training' ? 'Training...' : training.isReady() ? 'Retrain voice' : 'Train voice model' }}
+        </button>
         <small>
-          Uploaded samples are stored as the training reference. The local play button uses this browser voice until a
-          voice-cloning API is connected.
+          This calls <code>/api/voice/train</code>. Connect that endpoint to your voice cloning provider so the answer
+          audio uses this exact uploaded voice.
         </small>
       </div>
     </section>
   `,
 })
-export class VoiceSamplePanelComponent implements OnInit {
+export class VoiceSamplePanelComponent {
   readonly voice = inject(VoiceSampleService);
-  readonly browserVoice = inject(BrowserVoiceService);
+  readonly training = inject(VoiceTrainingService);
   readonly formatBytes = formatBytes;
-
-  ngOnInit(): void {
-    this.browserVoice.loadVoices();
-  }
 
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file) this.voice.useUploadedFile(file);
+    if (!file) return;
+    this.training.reset();
+    this.voice.useUploadedFile(file);
+  }
+
+  removeVoice(): void {
+    this.training.reset();
+    this.voice.removeVoice();
+  }
+
+  startRecording(): void {
+    this.training.reset();
+    void this.voice.startRecording();
   }
 }

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
-import { BrowserVoiceService } from '../services/browser-voice.service';
 import { ReceptionistSessionService } from '../services/receptionist-session.service';
+import { VoiceTrainingService } from '../services/voice-training.service';
 
 @Component({
   selector: 'app-answer-panel',
@@ -19,8 +19,8 @@ import { ReceptionistSessionService } from '../services/receptionist-session.ser
           }}
         </p>
         <small class="voice-disclaimer">
-          Preview playback voice: {{ browserVoice.preferredVoiceLabel() }}. Uploaded sample matching requires a
-          voice-cloning backend.
+          Voice output is generated from the trained uploaded sample. Browser default speech is no longer used for the
+          receptionist answer.
         </small>
       </div>
 
@@ -38,13 +38,20 @@ import { ReceptionistSessionService } from '../services/receptionist-session.ser
           *ngIf="session.generatedScript()"
           class="speak-button"
           type="button"
-          (click)="session.isSpeaking() ? session.stopSpeaking() : session.speakAnswer()"
+          [disabled]="training.isSynthesizing()"
+          (click)="session.synthesizeTrainedVoice()"
         >
-          {{ session.isSpeaking() ? 'Stop answer' : 'Play answer' }}
+          {{ training.isSynthesizing() ? 'Creating voice audio...' : 'Create trained voice audio' }}
         </button>
       </div>
 
-      <div class="signal-visual" [class.active]="session.generatedScript() || session.isGenerating() || session.isSpeaking()">
+      <div *ngIf="training.synthesizedAudioUrl()" class="trained-audio-card">
+        <strong>Trained voice output</strong>
+        <audio [src]="training.synthesizedAudioUrl()" controls autoplay></audio>
+      </div>
+      <p *ngIf="training.synthesisError()" class="synthesis-error">{{ training.synthesisError() }}</p>
+
+      <div class="signal-visual" [class.active]="session.generatedScript() || session.isGenerating() || training.isSynthesizing()">
         <span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
     </section>
@@ -52,7 +59,7 @@ import { ReceptionistSessionService } from '../services/receptionist-session.ser
 })
 export class AnswerPanelComponent implements OnDestroy {
   readonly session = inject(ReceptionistSessionService);
-  readonly browserVoice = inject(BrowserVoiceService);
+  readonly training = inject(VoiceTrainingService);
 
   ngOnDestroy(): void {
     this.session.stopSpeaking();
