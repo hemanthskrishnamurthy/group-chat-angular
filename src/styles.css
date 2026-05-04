@@ -240,6 +240,12 @@ h2 {
   color: #fff;
 }
 
+.answer-panel .voice-disclaimer {
+  display: block;
+  margin-top: 12px;
+  color: #a8b3c7;
+}
+
 .panel-heading {
   display: flex;
   justify-content: space-between;
@@ -401,7 +407,8 @@ h2 {
 }
 
 .voice-card,
-.document-card {
+.document-card,
+.browser-voice-card {
   border: 1px solid #d7dee8;
   border-radius: 8px;
   background: #fff;
@@ -414,6 +421,21 @@ h2 {
   align-items: center;
   margin-top: 14px;
   padding: 16px;
+}
+
+.browser-voice-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.browser-voice-card small,
+.voice-disclaimer {
+  color: #667085;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .voice-icon {

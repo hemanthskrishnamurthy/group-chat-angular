@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy } from '@angular/core';
+import { BrowserVoiceService } from '../services/browser-voice.service';
 import { ReceptionistSessionService } from '../services/receptionist-session.service';
 
 @Component({
@@ -17,6 +18,10 @@ import { ReceptionistSessionService } from '../services/receptionist-session.ser
               'The answer will be generated from the approved knowledge source and visitor command.'
           }}
         </p>
+        <small class="voice-disclaimer">
+          Preview playback voice: {{ browserVoice.preferredVoiceLabel() }}. Uploaded sample matching requires a
+          voice-cloning backend.
+        </small>
       </div>
 
       <div class="answer-actions">
@@ -47,6 +52,7 @@ import { ReceptionistSessionService } from '../services/receptionist-session.ser
 })
 export class AnswerPanelComponent implements OnDestroy {
   readonly session = inject(ReceptionistSessionService);
+  readonly browserVoice = inject(BrowserVoiceService);
 
   ngOnDestroy(): void {
     this.session.stopSpeaking();

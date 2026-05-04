@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { BrowserVoiceService } from './browser-voice.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { VoiceSampleService } from './voice-sample.service';
 
@@ -6,6 +7,7 @@ import { VoiceSampleService } from './voice-sample.service';
 export class ReceptionistSessionService {
   private readonly knowledge = inject(KnowledgeBaseService);
   private readonly voice = inject(VoiceSampleService);
+  private readonly browserVoice = inject(BrowserVoiceService);
 
   readonly modelName = signal('AI Receptionist');
   readonly speakingStyle = signal('Warm and clear');
@@ -51,6 +53,11 @@ export class ReceptionistSessionService {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(this.generatedScript());
+    const selectedVoice = this.browserVoice.selectedVoice();
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+    }
     utterance.rate = this.speakingStyle().includes('Calm') ? 0.9 : 1;
     utterance.pitch = this.speakingStyle().includes('Energetic') ? 1.1 : 1;
     utterance.onend = () => this.isSpeaking.set(false);

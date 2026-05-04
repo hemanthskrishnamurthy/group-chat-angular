@@ -1,12 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { BrowserVoiceService } from '../services/browser-voice.service';
 import { VoiceSampleService } from '../services/voice-sample.service';
 import { formatBytes } from '../utils/file-format';
 
 @Component({
   selector: 'app-voice-sample-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <section class="panel voice-panel" aria-labelledby="voice-title">
       <div class="panel-heading">
@@ -60,12 +62,36 @@ import { formatBytes } from '../utils/file-format';
         </div>
         <audio [src]="sample.url" controls></audio>
       </div>
+
+      <div class="browser-voice-card">
+        <label>
+          <span>Playback preview voice</span>
+          <select
+            [ngModel]="browserVoice.selectedVoiceURI()"
+            (ngModelChange)="browserVoice.setSelectedVoice($event)"
+          >
+            <option value="">Browser default voice</option>
+            <option *ngFor="let option of browserVoice.voices()" [value]="option.voiceURI">
+              {{ option.name }} ({{ option.lang }})
+            </option>
+          </select>
+        </label>
+        <small>
+          Uploaded samples are stored as the training reference. The local play button uses this browser voice until a
+          voice-cloning API is connected.
+        </small>
+      </div>
     </section>
   `,
 })
-export class VoiceSamplePanelComponent {
+export class VoiceSamplePanelComponent implements OnInit {
   readonly voice = inject(VoiceSampleService);
+  readonly browserVoice = inject(BrowserVoiceService);
   readonly formatBytes = formatBytes;
+
+  ngOnInit(): void {
+    this.browserVoice.loadVoices();
+  }
 
   onFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
