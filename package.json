@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "dev": "ng serve --host 0.0.0.0",
+    "dev": "node server/dev.mjs",
+    "dev:client": "ng serve --host 0.0.0.0 --proxy-config proxy.conf.json",
+    "dev:api": "node server/voice-api.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "preview": "ng serve --host 0.0.0.0"

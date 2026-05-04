@@ -66,10 +66,15 @@ import { formatBytes } from '../utils/file-format';
       <div class="voice-training-card" [class.ready]="training.isReady()" [class.error]="training.trainingError()">
         <div>
           <strong>{{ training.statusLabel() }}</strong>
-          <small *ngIf="!training.trainingError()">
-            Train the receptionist with the uploaded or recorded sample before generating cloned audio.
+          <small *ngIf="training.trainingState() !== 'error'">
+            {{
+              training.trainingError() ||
+                'Train the receptionist with the uploaded or recorded sample before generating cloned audio.'
+            }}
           </small>
-          <small *ngIf="training.trainingError()" class="training-error">{{ training.trainingError() }}</small>
+          <small *ngIf="training.trainingState() === 'error'" class="training-error">
+            {{ training.trainingError() }}
+          </small>
         </div>
         <button
           class="secondary-button"
@@ -80,8 +85,8 @@ import { formatBytes } from '../utils/file-format';
           {{ training.trainingState() === 'training' ? 'Training...' : training.isReady() ? 'Retrain voice' : 'Train voice model' }}
         </button>
         <small>
-          This calls <code>/api/voice/train</code>. Connect that endpoint to your voice cloning provider so the answer
-          audio uses this exact uploaded voice.
+          This calls <code>/api/voice/train</code>. The local API accepts the sample; connect its provider adapter to
+          generate a real cloned voice.
         </small>
       </div>
     </section>

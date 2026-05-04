@@ -48,20 +48,19 @@ export class VoiceTrainingService {
         throw new Error(`Training failed with status ${response.status}`);
       }
 
-      const result = (await response.json()) as { voiceId?: string; name?: string };
+      const result = (await response.json()) as { voiceId?: string; name?: string; message?: string };
       if (!result.voiceId) {
         throw new Error('Training response did not include a voiceId.');
       }
 
       this.trainedVoiceId.set(result.voiceId);
       this.trainedVoiceName.set(result.name || this.voice.trainingSampleName());
+      this.trainingError.set(result.message || '');
       this.trainingState.set('ready');
     } catch (error) {
       this.trainedVoiceId.set('');
       this.trainingState.set('error');
-      this.trainingError.set(
-        `${error instanceof Error ? error.message : 'Unable to train voice.'} Connect /api/voice/train to a voice cloning provider so uploaded samples can create a reusable receptionist voice.`
-      );
+      this.trainingError.set(`${error instanceof Error ? error.message : 'Unable to train voice.'}`);
     }
   }
 
@@ -98,7 +97,15 @@ export class VoiceTrainingService {
       });
 
       if (!response.ok) {
-        throw new Error(`Synthesis failed with status ${response.status}`);
+        const errorText = await response.text();
+        let message = `Synthesis failed with status ${response.status}`;
+        try {
+          const parsed = JSON.parse(errorText) as { error?: string };
+          message = parsed.error || message;
+        } catch {
+          if (errorText) message = errorText;
+        }
+        throw new Error(message);
       }
 
       const contentType = response.headers.get('content-type') || '';
@@ -112,9 +119,7 @@ export class VoiceTrainingService {
       const audio = await response.blob();
       this.synthesizedAudioUrl.set(URL.createObjectURL(audio));
     } catch (error) {
-      this.synthesisError.set(
-        `${error instanceof Error ? error.message : 'Unable to synthesize trained voice.'} Connect /api/voice/synthesize to return cloned speech audio from the trained voiceId.`
-      );
+      this.synthesisError.set(`${error instanceof Error ? error.message : 'Unable to synthesize trained voice.'}`);
     } finally {
       this.isSynthesizing.set(false);
     }
