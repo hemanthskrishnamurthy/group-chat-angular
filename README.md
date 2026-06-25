@@ -1,54 +1,147 @@
-# Enterprise HR Management System
+# Real-Time Group Chat App
 
-Production-grade Angular 21 + Node.js + Express + MongoDB HRMS scaffold with standalone components, signals, RBAC, JWT auth, Socket.IO, uploads, PDF payslips, audit logging, Docker, and CI.
+A clean and simple Angular frontend for a real-time group chat application. It connects to a Socket.IO backend and supports joining a chat, sending messages, online user count, typing indicators, connection status, and leave/disconnect behavior.
 
-## Quick Start
+## Tech Stack
 
-1. Copy `.env.example` to `.env` and set `MONGO_URI` to your MongoDB Atlas connection string.
-2. Install dependencies with `npm install`.
-3. Seed sample users and employees with `npm run seed`.
-4. Start both apps with `npm run dev`, or run `npm run dev:client` and `npm run dev:api` separately.
+- Angular
+- TypeScript
+- Socket.IO Client
+- Lucide Angular icons
+- SCSS
 
-Default seeded credentials use `Password@123`:
+## Features
 
-- `admin@company.com` as Super Admin
-- `hr@company.com` as HR
-- `manager@company.com` as Manager
-- `employee@company.com` as Employee
+- Join chat with a username
+- Send and receive messages instantly
+- Show current online user count
+- Show connection status
+- Show typing indicators from other users
+- Show welcome and system messages
+- Leave chat from the UI
+- Responsive layout for desktop and mobile
 
-## Architecture
+## Folder Structure
 
-Frontend lives under `src/app` with `core`, `shared`, `features`, `layout`, `guards`, `interceptors`, `state`, `models`, and `utils`. Routes are lazy loaded, auth is signal-backed, and RBAC is enforced with functional guards.
+```text
+src/
+├── app/
+│   ├── chat/
+│   │   ├── chat.component.ts
+│   │   ├── chat.models.ts
+│   │   └── chat.service.ts
+│   └── app.routes.ts
+├── main.ts
+└── styles.scss
+```
 
-Backend lives under `server/src` with controllers, services, repositories, models, middlewares, routes, validators, sockets, utilities, logs, and scripts. It uses Helmet, CORS, rate limiting, compression, Mongo sanitization, Joi validation, Winston logging, Mongoose indexing, JWT auth, RBAC, Socket.IO events, Multer uploads, and PDFKit generation.
+## Prerequisites
 
-## API Surface
+Install Node.js and npm.
 
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/employees`
-- `GET /api/employees/:id`
-- `POST /api/employees`
-- `PUT /api/employees/:id`
-- `DELETE /api/employees/:id`
-- `POST /api/leave/apply`
-- `PUT /api/leave/approve/:id`
-- `GET /api/leave/history`
-- `POST /api/attendance/checkin`
-- `POST /api/attendance/checkout`
-- `GET /api/attendance/report`
-- `POST /api/payroll/process`
-- `GET /api/payroll/payslip/:id`
+The chat frontend expects the Socket.IO backend to run at:
 
-## Docker
+```text
+http://localhost:3000
+```
 
-Use MongoDB Atlas by setting `MONGO_URI` in `.env`, or use the local MongoDB service from Compose.
+The Angular frontend runs at:
+
+```text
+http://localhost:4200
+```
+
+## Installation
 
 ```bash
-docker compose up --build
+npm install
 ```
+
+## Run The Frontend
+
+```bash
+npm run dev:client
+```
+
+Open:
+
+```text
+http://localhost:4200
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Backend Requirement
+
+Start the Node.js Socket.IO backend before using the chat UI. The frontend connects to the backend from:
+
+```ts
+const SOCKET_URL = 'http://localhost:3000';
+```
+
+This value is defined in:
+
+```text
+src/app/chat/chat.service.ts
+```
+
+## Expected Backend Events
+
+### Client-To-Server Events
+
+| Event | Payload |
+| --- | --- |
+| `join_chat` | `{ "username": "Hemanth" }` |
+| `send_message` | `{ "message": "Hello everyone" }` |
+| `typing` | `{ "isTyping": true }` |
+| `stop_typing` | No payload |
+
+### Server-To-Client Events
+
+| Event | Payload |
+| --- | --- |
+| `welcome_message` | `{ "message": "Welcome to the chat, Hemanth!", "timestamp": "ISO date string" }` |
+| `system_message` | `{ "message": "Hemanth joined the chat", "timestamp": "ISO date string" }` |
+| `receive_message` | `{ "id": "message-id", "username": "Hemanth", "message": "Hello", "timestamp": "ISO date string", "socketId": "sender socket id" }` |
+| `online_users` | `{ "count": 3 }` |
+| `user_typing` | `{ "username": "Hemanth", "socketId": "sender socket id" }` |
+| `user_stop_typing` | `{ "username": "Hemanth", "socketId": "sender socket id" }` |
+| `chat_error` | `{ "message": "Username is required" }` |
+
+## How The Frontend Works
+
+`chat.component.ts` contains the user interface. It displays the join form, message list, typing text, status pills, and message input.
+
+`chat.service.ts` manages the Socket.IO connection. It sends client events, listens for server events, and stores chat state using Angular signals.
+
+`chat.models.ts` contains TypeScript interfaces for chat messages, system messages, typing users, and feed items.
+
+`app.routes.ts` loads the chat screen as the default route.
+
+`styles.scss` contains the responsive chat UI styles.
+
+## Testing The Chat
+
+1. Start the backend on port `3000`.
+2. Start the Angular frontend:
+
+   ```bash
+   npm run dev:client
+   ```
+
+3. Open `http://localhost:4200` in two browser tabs.
+4. Join with a different username in each tab.
+5. Send messages and verify both tabs update instantly.
+6. Type in one tab and verify the other tab shows the typing indicator.
+7. Leave or close one tab and verify the online count updates.
 
 ## Notes
 
-The frontend currently includes operational enterprise screens and reusable primitives. Backend endpoints are layered and ready for deeper workflow hardening such as email providers, calendar providers, Excel exports, and AI assistant integrations.
+- This frontend does not include authentication.
+- This frontend does not store chat history.
+- Messages only appear while the backend and clients are connected.
+- The backend should handle validation, message IDs, timestamps, and online user count.
